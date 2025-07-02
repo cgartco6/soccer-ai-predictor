@@ -1,0 +1,31 @@
+model:
+  name: temporal_fusion_transformer
+  version: 2.3
+  parameters:
+    hidden_units: 256
+    dropout: 0.1
+    learning_rate: 0.001
+    epochs: 100
+    batch_size: 128
+
+features:
+  - name: team_form
+    type: float
+    window: 5
+  - name: player_fitness
+    type: float
+    source: biometric_api
+  - name: weather_impact
+    type: category
+    categories: [dry, wet, storm]
+  - name: referee_bias
+    type: float
+    calculation: "ref_stats.home_win_pct - ref_stats.away_win_pct"
+
+thresholds:
+  golden_signal:
+    min_confidence: 0.92
+    min_value_edge: 0.15
+  retraining:
+    accuracy_drop: 0.03
+    data_interval: 7d
