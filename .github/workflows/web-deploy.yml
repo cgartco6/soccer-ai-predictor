@@ -1,0 +1,33 @@
+name: Deploy Web App
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web/**'
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+    - name: Install dependencies
+      working-directory: web
+      run: npm ci
+    - name: Build production app
+      working-directory: web
+      run: npm run build
+      env:
+        REACT_APP_API_URL: https://api.soccer-ai.com/v1
+    - name: Deploy to Firebase
+      uses: w9jds/firebase-action@v2.0.0
+      with:
+        args: deploy --only hosting
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_DEPLOY_TOKEN }}
