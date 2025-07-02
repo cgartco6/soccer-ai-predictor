@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  ai-engine:
+    build: ./ai_engine
+    command: python main.py
+    environment:
+      - DB_URL=postgres://user:pass@db:5432/soccerai
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+    volumes:
+      - ./data:/app/data
+
+  api-service:
+    build: ./api_service
+    ports:
+      - "8000:8000"
+    environment:
+      - AI_ENGINE_URL=http://ai-engine:5000
+
+  telegram-bot:
+    build: ./telegram_bot
+    environment:
+      - API_URL=http://api-service:8000
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+
+  db:
+    image: postgres:14
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: soccerai
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+
+  web:
+    build: ./web_ui
+    ports:
+      - "3000:3000"
+      
+volumes:
+  pgdata:
+  data:
