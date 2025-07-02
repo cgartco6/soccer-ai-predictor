@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  api:
+    build: ./api_gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_URL=postgres://user:pass@db:5432/soccerai
+      - AI_MODEL_PATH=/models/tft.h5
+    volumes:
+      - ./models:/models
+    depends_on:
+      - db
+
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: soccerai
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  scraper:
+    build: ./ai_agents
+    command: python data_scraper.py --live
+    environment:
+      - DB_URL=postgres://user:pass@db:5432/soccerai
+    depends_on:
+      - db
+
+  telegram-bot:
+    build: ./telegram_bot
+    environment:
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - API_URL=http://api:8000
+
+volumes:
+  pgdata:
