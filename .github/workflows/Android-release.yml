@@ -1,0 +1,57 @@
+name: Android Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-type:
+        description: 'Release type'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    - name: Build APK
+      working-directory: mobile/android
+      run: ./gradlew assembleRelease
+    - name: Sign APK
+      uses: r0adkll/sign-android-release@v1
+      with:
+        releaseDirectory: mobile/android/app/build/outputs/apk/release
+        signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+        alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+        keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+        keyPassword: ${{ secrets.KEY_PASSWORD }}
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: soccerai-predictor
+        path: mobile/android/app/build/outputs/apk/release/*.apk
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event.inputs.release-type == 'production'
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: soccerai-predictor
+    - name: Deploy to Firebase
+      uses: wzieba/Firebase-Distribution-Github-Action@v1
+      with:
+        appId: ${{ secrets.FIREBASE_APP_ID }}
+        token: ${{ secrets.FIREBASE_TOKEN }}
+        groups: testers
+        file: app-release-signed.apk
