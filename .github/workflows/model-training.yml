@@ -1,0 +1,36 @@
+name: Retrain AI Models
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+  workflow_dispatch:
+
+jobs:
+  train-models:
+    runs-on: [self-hosted, gpu]
+    container:
+      image: tensorflow/tensorflow:2.12-gpu
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        pip install -r ai_agents/requirements.txt
+        apt-get update && apt-get install -y libgl1-mesa-glx
+    - name: Download training data
+      run: python ai_agents/data_loader.py --source=all --update
+    - name: Train TFT model
+      run: python ai_agents/train_tft.py --epochs=100 --batch_size=256
+      env:
+        CUDA_VISIBLE_DEVICES: 0
+    - name: Validate model
+      run: python ai_agents/validate.py --model=tft_v2
+    - name: Upload to model registry
+      uses: actions/upload-artifact@v3
+      with:
+        name: tft-model-v2
+        path: ai_agents/models/tft_v2.h5
+    - name: Deploy to API
+      run: |
+        curl -X POST https://api.soccer-ai.com/deploy \
+        -H "Authorization: Bearer ${{ secrets.API_DEPLOY_KEY }}" \
+        -F "model=@ai_agents/models/tft_v2.h5"
