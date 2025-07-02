@@ -1,0 +1,51 @@
+name: Main CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        pip install -r ai_agents/requirements.txt
+        pip install -r api_gateway/requirements.txt
+    - name: Run tests
+      run: |
+        pytest ai_agents/tests/
+        pytest api_gateway/tests/
+
+  lint-node:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    - name: Install dependencies
+      working-directory: web
+      run: npm ci
+    - name: Run ESLint
+      working-directory: web
+      run: npm run lint
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Check vulnerabilities
+      uses: actions/dependency-review-action@v3
+    - name: Python security scan
+      uses: pycqa/flake8@6.1.0
+      with:
+        config-file: .flake8
