@@ -1,1 +1,23 @@
+hollywoodbets:
+  api_url: https://api.hollywoodbets.com/v1/odds
+  auth_type: oauth2
+  endpoints:
+    soccer: /sports/1/events
+  rate_limit: 100/1min
 
+betway:
+  api_url: https://sports.betway.com/api
+  auth_type: api_key
+  endpoints:
+    inplay: /events/inplay
+    upcoming: /events/upcoming
+  odds_format: decimal
+
+arbitrage:
+  min_profit: 1.5
+  max_stake_difference: 0.15
+  bookmakers:
+    - hollywoodbets
+    - betway
+    - bet365
+    - pinnacle
